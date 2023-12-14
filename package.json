@@ -1,11 +1,21 @@
 {
   "name": "bifrost",
-  "module": "index.ts",
+  "version": "0.0.1",
+  "module": "src/index.ts",
   "type": "module",
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "start": "bun dist/index.js",
+    "build": "bun build --target=bun ./src/index.ts --outdir ./dist"
+  },
   "devDependencies": {
+    "@types/mustache": "^4.2.5",
     "bun-types": "latest"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "mustache": "^4.2.0"
   }
 }
