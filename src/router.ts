@@ -9,9 +9,9 @@ type Route = {
 
 type BifrostProxiedRoute = {
   url: string
-  method: Method
   headers: Record<string, string>
   body: Record<string, string>
+  method?: Method
 }
 
 type BifrostRoute = {
@@ -111,10 +111,6 @@ export const router = async (req: Request) => {
   const { method, url } = req
   const pathname = new URL(url).pathname
   const endpoint = `/${pathname.split('/')[1]}`
-  let payload = {}
-  try {
-    payload = await req.json()
-  } catch (_) {}
 
   const token = getToken(req)
 
@@ -122,10 +118,15 @@ export const router = async (req: Request) => {
   if (route) {
     if (route.authorization && route.authorization !== token) return e401()
 
+    let payload = {}
+    try {
+      payload = await req.json()
+    } catch (_) {}
+
     const status = new Map<string, RouteResponse>()
     for (const {
       url: templateUrl,
-      method,
+      method = 'GET',
       headers: templateHeaders,
       body: templateBody
     } of route.routes) {
@@ -148,7 +149,8 @@ export const router = async (req: Request) => {
         })
 
         const responseBody = await getResponseBody(response)
-        if (response.ok) status.set(key, { status: 200, body: responseBody })
+        if (response.ok)
+          status.set(key, { status: response.status, body: responseBody })
         else
           status.set(key, {
             status: response.status,
@@ -161,8 +163,8 @@ export const router = async (req: Request) => {
     }
     const statusResponse = Object.fromEntries(status)
     return Response.json(statusResponse, {
-      status: Object.values(statusResponse).some(({ status }) => status !== 200)
-        ? 500
+      status: Object.values(statusResponse).some(({ error }) => error)
+        ? 502
         : 200
     })
   }
